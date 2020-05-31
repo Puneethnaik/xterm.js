@@ -28,24 +28,31 @@ export namespace channels {
 export namespace color {
   export function blend(bg: IColor, fg: IColor): IColor {
     const a = (fg.rgba & 0xFF) / 255;
-    if (a === 1) {
-      return {
-        css: fg.css,
-        rgba: fg.rgba
-      };
-    }
     const fgR = (fg.rgba >> 24) & 0xFF;
     const fgG = (fg.rgba >> 16) & 0xFF;
     const fgB = (fg.rgba >> 8) & 0xFF;
     const bgR = (bg.rgba >> 24) & 0xFF;
     const bgG = (bg.rgba >> 16) & 0xFF;
     const bgB = (bg.rgba >> 8) & 0xFF;
-    const r = bgR + Math.round((fgR - bgR) * a);
-    const g = bgG + Math.round((fgG - bgG) * a);
-    const b = bgB + Math.round((fgB - bgB) * a);
-    const css = channels.toCss(r, g, b);
-    const rgba = channels.toRgba(r, g, b);
-    return { css, rgba };
+    if(a === 1) {
+      // Issue #2737 "Let's change the canvas and dom renderers to blend the color with the background color at 0.3 opacity if the selection color is opaque."
+      const newAlpha = 0.3;
+      const r = bgR + Math.round((fgR - bgR) * newAlpha);
+      const g = bgG + Math.round((fgG - bgG) * newAlpha);
+      const b = bgB + Math.round((fgB - bgB) * newAlpha);
+      const css = channels.toCss(r, g, b, Math.round(newAlpha * 255));
+      const rgba = channels.toRgba(r, g, b, Math.round(newAlpha * 255));
+      
+      return { css, rgba };
+    } else {
+      const r = bgR + Math.round((fgR - bgR) * a);
+      const g = bgG + Math.round((fgG - bgG) * a);
+      const b = bgB + Math.round((fgB - bgB) * a);
+      const css = channels.toCss(r, g, b);
+      const rgba = channels.toRgba(r, g, b);
+      
+      return { css, rgba };
+    }
   }
 
   export function ensureContrastRatio(bg: IColor, fg: IColor, ratio: number): IColor | undefined {
